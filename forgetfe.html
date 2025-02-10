@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Forgot Password - Craze Kicks</title>
+        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+        <style>
+        body {
+            background: url('images/felog.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+        </style>
+    </head>
+    <body class="flex items-center justify-center min-h-screen bg-gray-100 bg-opacity-90">
+        <div class="w-full max-w-md bg-white bg-opacity-90 shadow-xl rounded-lg p-6">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-4">Forgot Your Password?</h2>
+            <p class="mb-6 text-center text-gray-700">Enter your email address and we'll send you a verification code.</p>
+            <form id="forgot-password-form" onsubmit="validateForm(event)" class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        required
+                        placeholder="Enter your email"
+                        class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500"
+                    >
+                </div>
+                <div>
+                    <label for="verification-code" class="block text-sm font-medium text-gray-700">Verification Code</label>
+                    <input
+                        type="text"
+                        id="verification-code"
+                        name="verification-code"
+                        required
+                        placeholder="Enter the code"
+                        class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500"
+                    >
+                </div>
+                <div class="flex items-center">
+                    <input
+                        type="checkbox"
+                        id="human-check"
+                        required
+                        class="text-green-500 focus:ring-green-500"
+                    >
+                    <label for="human-check" class="ml-2 text-sm text-gray-700">I am not a robot</label>
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-yellow-300 to-green-300 text-gray-800 py-2 rounded-xl shadow-lg hover:from-green-300 hover:to-yellow-200 focus:outline-none focus:ring-2 focus:ring-green-950 focus:ring-offset-2">
+                    Send Verification Code
+                </button>
+            </form>
+            <div id="success-message" class="mt-4 text-green-500 text-center hidden">
+                <p>A verification code has been sent to your email!</p>
+            </div>
+            <div class="mt-4 text-center text-sm">
+                <a href="login.php" class="text-green-600 hover:underline">Back to Login</a>
+            </div>
+        </div>
+        <script>
+            // Prevent form submission message
+        function validateForm(event) {
+            event.preventDefault(); 
+            
+            const email = document.getElementById('email').value;
+            const verificationCode = document.getElementById('verification-code').value;
+            const isHuman = document.getElementById('human-check').checked;
+
+            if (!email || !verificationCode || !isHuman) {
+                alert("Please fill in all fields and confirm you're not a robot.");
+                return;
+            }
+
+            // Simulate sending the verification code
+            setTimeout(() => {
+                document.getElementById('success-message').classList.remove('hidden');
+            }, 1000);
+        }
+        </script>
+    </body>
+</html>

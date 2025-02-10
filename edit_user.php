@@ -126,8 +126,19 @@ $conn->close();
         </form>
     </main>
 
-    <footer class="bg-gray-800 text-white p-6 mt-8 text-center">
-        <p>&copy; 2024 Craze Kicks. All rights reserved.</p>
-    </footer>
+    <footer class="bg-gray-800 text-white p-6 mt-8">
+            <div class="container mx-auto text-center">
+                <div class="mb-4">
+                    <a href="terms.php" class="text-yellow-400 hover:underline">Terms and Conditions</a>
+                    |
+                    <a href="brands.php" class="text-yellow-400 hover:underline">Supporting Brands</a>
+                    |
+                    <a href="https://maps.app.goo.gl/7RpMEkxRyQpapiJq6" class="text-yellow-400 hover:underline">Our Shop Location</a>
+                </div>
+                <p>&copy; 2024 Craze Kicks. All rights reserved.</p>
+                <p> supporting brands</p>
+                <p class="text-green-400">ADDIDAS | NIKE | NEW BALANCE | UNDER ARMOUR | PUMA</p>
+            </div>
+        </footer>
 </body>
 </html>

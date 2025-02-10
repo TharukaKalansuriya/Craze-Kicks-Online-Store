@@ -5,10 +5,14 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-$servername = "localhost"; // Your server name
-$username = "root"; // Your database username
-$password = "1234"; // Your database password
-$dbname = "crazekicks"; // Your database name
+// server name
+$servername = "localhost"; 
+// database username
+$username = "root";
+// database password 
+$password = "1234";
+// database name 
+$dbname = "crazekicks"; 
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 
@@ -17,7 +21,7 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Handle out of stock or delete item requests
+// Handle out of stock, delete item, and update offer requests
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['out_of_stock'])) {
         $itemId = $_POST['item_id'];
@@ -34,24 +38,101 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->execute();
         $stmt->close();
     }
+
+    // Handle marking item as an offer
+    if (isset($_POST['is_offer'])) {
+        $itemId = $_POST['item_id'];
+        $isOffer = isset($_POST['is_offer']) ? 1 : 0;
+        $stmt = $conn->prepare("UPDATE items SET is_offer = ? WHERE id = ?");
+        $stmt->bind_param("ii", $isOffer, $itemId);
+        $stmt->execute();
+        $stmt->close();
+    }
 }
 
 // Fetch market items
 $itemsQuery = "SELECT * FROM items";
-$itemsResult = $conn->query($itemsQuery);
+$itemsStmt = $conn->prepare($itemsQuery);
+$itemsStmt->execute();
+$itemsResult = $itemsStmt->get_result();
 
 // Fetch users
 $usersQuery = "SELECT * FROM users";
-$usersResult = $conn->query($usersQuery);
+$usersStmt = $conn->prepare($usersQuery);
+$usersStmt->execute();
+$usersResult = $usersStmt->get_result();
 
 // Handle user role filtering
 $filterRole = isset($_POST['filter_role']) ? $_POST['filter_role'] : '';
 $filteredUsersQuery = "SELECT * FROM users";
 if ($filterRole) {
-    $filteredUsersQuery .= " WHERE role = '$filterRole'";
+    $filteredUsersQuery .= " WHERE role = ?";
+    $filteredUsersStmt = $conn->prepare($filteredUsersQuery);
+    $filteredUsersStmt->bind_param("s", $filterRole);
+    $filteredUsersStmt->execute();
+    $filteredUsersResult = $filteredUsersStmt->get_result();
+} else {
+    $filteredUsersStmt = $conn->prepare($filteredUsersQuery);
+    $filteredUsersStmt->execute();
+    $filteredUsersResult = $filteredUsersStmt->get_result();
 }
-$filteredUsersResult = $conn->query($filteredUsersQuery);
 
+// Include TCPDF library for report generation
+require_once('tcpdf.php');
+
+// Handle report generation
+if (isset($_POST['generate_report'])) {
+    // Create PDF document
+    $pdf = new TCPDF();
+    $pdf->AddPage();
+    $pdf->SetFont('helvetica', '', 12);
+
+    // Title
+    $pdf->Cell(0, 10, 'Craze Kicks Admin Report', 0, 1, 'C');
+    $pdf->Ln(10);
+
+    // Market Items Report
+    $pdf->Cell(0, 10, 'Market Items Report', 0, 1, 'L');
+    $pdf->Ln(4);
+
+    // Fetch items and write to PDF
+    $pdf->Cell(40, 10, 'Item Name', 1);
+    $pdf->Cell(30, 10, 'Price', 1);
+    $pdf->Cell(30, 10, 'Status', 1);
+    $pdf->Cell(30, 10, 'Offer', 1);
+    $pdf->Ln();
+
+    while ($item = $itemsResult->fetch_assoc()) {
+        $pdf->Cell(40, 10, $item['name'], 1);
+        $pdf->Cell(30, 10, $item['price'], 1);
+        $pdf->Cell(30, 10, $item['status'] == 'out_of_stock' ? 'Out of Stock' : 'Available', 1);
+        $pdf->Cell(30, 10, $item['is_offer'] == 1 ? 'Yes' : 'No', 1);
+        $pdf->Ln();
+    }
+
+    $pdf->Ln(10);
+
+    // Users Report
+    $pdf->Cell(0, 10, 'Users Report', 0, 1, 'L');
+    $pdf->Ln(4);
+
+    // Fetch users and write to PDF
+    $pdf->Cell(40, 10, 'Name', 1);
+    $pdf->Cell(60, 10, 'Email', 1);
+    $pdf->Cell(40, 10, 'Role', 1);
+    $pdf->Ln();
+
+    while ($user = $filteredUsersResult->fetch_assoc()) {
+        $pdf->Cell(40, 10, $user['name'], 1);
+        $pdf->Cell(60, 10, $user['email'], 1);
+        $pdf->Cell(40, 10, $user['role'], 1);
+        $pdf->Ln();
+    }
+
+    // Output the PDF to the browser
+    $pdf->Output('admin_report.pdf', 'D');
+    exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -81,6 +162,11 @@ $filteredUsersResult = $conn->query($filteredUsersQuery);
             <a href="market.php" class="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">View Market</a>
         </div>
 
+        <!-- Generate Report Button -->
+        <form method="POST" class="mb-6">
+            <button type="submit" name="generate_report" class="bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700">Generate PDF Report</button>
+        </form>
+
         <!-- Market Section -->
         <div id="market" class="mb-8">
             <h2 class="text-xl font-bold mb-4">Market Products</h2>
@@ -91,6 +177,7 @@ $filteredUsersResult = $conn->query($filteredUsersQuery);
                         <th class="border px-4 py-2">Description</th>
                         <th class="border px-4 py-2">Price</th>
                         <th class="border px-4 py-2">Status</th>
+                        <th class="border px-4 py-2">Offer</th>
                         <th class="border px-4 py-2">Actions</th>
                     </tr>
                 </thead>
@@ -101,6 +188,12 @@ $filteredUsersResult = $conn->query($filteredUsersQuery);
                         <td class="border px-4 py-2"><?php echo $item['description']; ?></td>
                         <td class="border px-4 py-2"><?php echo $item['price']; ?></td>
                         <td class="border px-4 py-2"><?php echo $item['status'] == 'out_of_stock' ? 'Out of Stock' : 'Available'; ?></td>
+                        <td class="border px-4 py-2 text-center">
+                            <form method="POST">
+                                <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
+                                <input type="checkbox" name="is_offer" value="1" <?php echo $item['is_offer'] == 1 ? 'checked' : ''; ?> onchange="this.form.submit();">
+                            </form>
+                        </td>
                         <td class="border px-4 py-2">
                             <form method="POST" class="inline">
                                 <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
@@ -138,7 +231,7 @@ $filteredUsersResult = $conn->query($filteredUsersQuery);
                         <th class="border px-4 py-2">Name</th>
                         <th class="border px-4 py-2">Email</th>
                         <th class="border px-4 py-2">Role</th>
-                        <th class="border px-4 py-2">Actions</th>
+                        <th class="border px-4 py-2">Edit</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -147,22 +240,15 @@ $filteredUsersResult = $conn->query($filteredUsersQuery);
                         <td class="border px-4 py-2"><?php echo $user['name']; ?></td>
                         <td class="border px-4 py-2"><?php echo $user['email']; ?></td>
                         <td class="border px-4 py-2"><?php echo $user['role']; ?></td>
-                        <td class="border px-4 py-2">
-                            <a href="edit_user.php?id=<?php echo $user['id']; ?>" class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600">Edit</a>
-                        </td>
+                        <td class="p-4 px-4 py-2">
+                        <a href="edit_user.php?id=<?php echo $user['id']; ?>" class="text-blue-600 hover:underline">Edit</a>
+                    </td>
                     </tr>
                     <?php endwhile; ?>
                 </tbody>
             </table>
         </div>
     </main>
-
-    <footer class="bg-gray-800 text-white p-6 mt-8 text-center">
-        <p>&copy; 2024 Craze Kicks. All rights reserved.</p>
-    </footer>
 </body>
 </html>
 
-<?php
-$conn->close();
-?>

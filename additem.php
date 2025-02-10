@@ -1,6 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'sales_keeper'])) {
     header("Location: login.php");
     exit;
 }
@@ -23,9 +23,9 @@ $successMessage = '';
 
 // Add new item
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $productName = $_POST['product_name'];
-    $productDescription = $_POST['product_description'];
-    $price = $_POST['price'];
+    $productName = isset($_POST['product_name']) ? $_POST['product_name'] : '';
+    $productDescription = isset($_POST['product_description']) ? $_POST['product_description'] : '';
+    $price = isset($_POST['price']) ? $_POST['price'] : '';
     $stock = isset($_POST['stock']) ? 1 : 0; // 1 for in stock, 0 for out of stock
 
     // Validate inputs
