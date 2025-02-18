@@ -1,60 +1,59 @@
 <?php
 session_start();
+
+// Database connection
 $servername = "localhost";
 $username = "root";
 $password = "1234";
 $dbname = "crazekicks";
 
-// Create a connection to the database
 $conn = new mysqli($servername, $username, $password, $dbname);
-
-// Check if the connection is successful, else return an error response
 if ($conn->connect_error) {
-    die(json_encode(["success" => false, "message" => "Database connection failed"]));
+    die("Connection failed: " . $conn->connect_error);
 }
 
-// Get data from the request (sent as JSON)
-$data = json_decode(file_get_contents("php://input"), true);
-
-// Check if the user is logged in
-if (!isset($_SESSION['user_email'])) {
-    echo json_encode(["success" => false, "message" => "User not logged in"]);
-    exit;
+// Ensure user is logged in
+if (!isset($_SESSION['email'])) {
+    echo "<script>alert('User not logged in!'); window.history.back();</script>";
+    exit();
 }
 
-$user_email = $_SESSION['user_email']; // Get the logged-in user's email
-$item_id = intval($data['id']);        // Get item ID from request
-$size = $data['size'];                 // Get size from request
-$quantity = intval($data['quantity']); // Get quantity from request
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $itemID = isset($_POST['itemID']) ? intval($_POST['itemID']) : 0;
+    $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
+    $email = $_SESSION['email'];
 
-// Fetch item details from the 'items' table based on the item ID
-$sql = "SELECT name, price FROM items WHERE id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $item_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$item = $result->fetch_assoc();
+    if ($itemID > 0) {
+        // Fetch the item details, including the image
+        $stmt = $conn->prepare("SELECT id, image, price FROM items WHERE id = ?");
+        $stmt->bind_param("i", $itemID);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $item = $result->fetch_assoc();
+        $stmt->close();
 
-// Check if the item exists
-if (!$item) {
-    echo json_encode(["success" => false, "message" => "Product not found"]);
-    exit;
-}
+        if (!$item) {
+            echo "<script>alert('Invalid product!'); window.location.href = 'product.php?id=$itemID';</script>";
+            exit();
+        }
+        // Get image from items table
+        $image = $item['image']; 
+         // Get price from items table
+        $price = $item['price'];
 
-// Get the item name and price
-$item_name = $item['name'];
-$item_price = $item['price'];
+        // Insert the itemID, email, image, price, and quantity into cart
+        $stmt = $conn->prepare("INSERT INTO cart (itemID, email, image, price, qty) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("issdi", $itemID, $email, $image, $price, $quantity);
 
-// Insert the item into the cart table
-$sql = "INSERT INTO cart (item, price, qty, user_email, size) VALUES (?, ?, ?, ?, ?)";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("sdisi", $item_name, $item_price, $quantity, $user_email, $size);
-
-// Check if the item was successfully added to the cart
-if ($stmt->execute()) {
-    echo json_encode(["success" => true, "message" => "Item added to cart"]);
-} else {
-    echo json_encode(["success" => false, "message" => "Failed to add to cart"]);
+        if ($stmt->execute()) {
+            echo "<script>alert('Added to cart!'); window.location.href = 'product.php?id=$itemID';</script>";
+        } else {
+            echo "<script>alert('Error adding to cart!'); window.location.href = 'product.php?id=$itemID';</script>";
+        }
+        $stmt->close();
+    } else {
+        echo "<script>alert('Invalid product! itemID is: " . $itemID . "'); window.location.href = 'product.php';</script>";
+    }
 }
 
 $conn->close();

@@ -5,13 +5,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-// server name
 $servername = "localhost"; 
-// database username
 $username = "root";
-// database password 
 $password = "1234";
-// database name 
 $dbname = "crazekicks"; 
 
 $conn = new mysqli($servername, $username, $password, $dbname);
@@ -250,5 +246,8 @@ if (isset($_POST['generate_report'])) {
         </div>
     </main>
 </body>
+ 
+    <!-- Footer -->
+    <?php include 'footer.php'; ?>
 </html>
 

@@ -5,10 +5,10 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'sale
     exit;
 }
 
-$servername = "localhost"; // Your server name
-$username = "root"; // Your database username
-$password = "1234"; // Your database password
-$dbname = "crazekicks"; // Your database name
+$servername = "localhost"; 
+$username = "root"; 
+$password = "1234"; 
+$dbname = "crazekicks"; 
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 
@@ -33,7 +33,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $errorMessage = "All fields are required.";
     } else {
         // Handle image uploads
-        $targetDir = "uploads/"; // Directory to save uploaded images
+
+        // Directory to save uploaded images
+        $targetDir = "uploads/"; 
         $uploadOk = 1;
         $imagePaths = [];
 
@@ -63,7 +65,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // If no image uploaded, add a placeholder
         if (empty($imagePaths)) {
-            $imagePaths[] = "uploads/default.jpg";
+            $imagePaths[] = "images/default.jpg";
         }
 
         // Convert image paths array to JSON for storage
@@ -158,16 +160,8 @@ $conn->close();
             <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">Add Item</button>
         </form>
     </main>
-
-    <footer class="bg-gray-800 text-white p-6 mt-8">
-        <div class="container mx-auto text-center">
-            <div class="mb-4">
-                <a href="termsfe.html" class="text-yellow-400 hover:underline">Terms and Conditions</a> |
-                <a href="brandsfe.html" class="text-yellow-400 hover:underline">Supporting Brands</a> |
-                <a href="https://maps.app.goo.gl/7RpMEkxRyQpapiJq6" class="text-yellow-400 hover:underline">Our Shop Location</a>
-            </div>
-            <p>&copy; 2024 Craze Kicks. All rights reserved.</p>
-        </div>
-    </footer>
+ 
+    <!-- Footer -->
+    <?php include 'footer.php'; ?>
 </body>
 </html>

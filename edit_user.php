@@ -1,40 +1,34 @@
 <?php
 session_start();
+
+// Redirect if user is not logged in or is not an admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header("Location: login.php");
     exit;
 }
 
-$servername = "localhost"; // Your server name
-$username = "root"; // Your database username
-$password = "1234"; // Your database password
-$dbname = "crazekicks"; // Your database name
+// Include the connection 
+require_once 'connection.php';
 
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+// Initialize theDatabse class
+$db = new Database();
 
 // Initialize variables
 $errorMessage = '';
 $successMessage = '';
+$user = [];
 
 // Fetch user details
 if (isset($_GET['id'])) {
     $userId = $_GET['id'];
-    $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
-    $stmt->bind_param("i", $userId);
-    $stmt->execute();
-    $result = $stmt->get_result();
 
-    if ($result->num_rows > 0) {
-        $user = $result->fetch_assoc();
-    } else {
+    // Use prepared statement to fetch user details
+    $query = "SELECT * FROM users WHERE id = ?";
+    $user = $db->fetchOne($query, [$userId]);
+
+    if (!$user) {
         $errorMessage = "User not found.";
     }
-    $stmt->close();
 }
 
 // Update user details
@@ -47,20 +41,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty($name) || empty($email)) {
         $errorMessage = "Name and email are required.";
     } else {
-        // Update the user in the database
-        $stmt = $conn->prepare("UPDATE users SET name = ?, email = ?, role = ? WHERE id = ?");
-        $stmt->bind_param("sssi", $name, $email, $role, $userId);
+        // Use prepared statement to update user details
+        $query = "UPDATE users SET name = ?, email = ?, role = ? WHERE id = ?";
+        $params = [$name, $email, $role, $userId];
 
-        if ($stmt->execute()) {
+        // Execute the update query
+        if ($db->executeQuery($query, $params)) {
             $successMessage = "User updated successfully.";
         } else {
-            $errorMessage = "Error updating user: " . $stmt->error;
+            $errorMessage = "Error updating user.";
         }
-        $stmt->close();
     }
 }
-
-$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -72,6 +64,7 @@ $conn->close();
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100">
+    <!-- Navigation Bar -->
     <nav class="bg-white p-4 shadow-lg flex justify-between items-center">
         <div class="flex items-center space-x-4">
             <a href="index.php" class="text-xl font-semibold">Craze Kicks</a>
@@ -82,6 +75,7 @@ $conn->close();
         </div>
     </nav>
 
+    <!-- Main Content -->
     <main class="p-8">
         <h1 class="text-2xl font-bold mb-6">Edit User</h1>
 
@@ -126,19 +120,7 @@ $conn->close();
         </form>
     </main>
 
-    <footer class="bg-gray-800 text-white p-6 mt-8">
-            <div class="container mx-auto text-center">
-                <div class="mb-4">
-                    <a href="terms.php" class="text-yellow-400 hover:underline">Terms and Conditions</a>
-                    |
-                    <a href="brands.php" class="text-yellow-400 hover:underline">Supporting Brands</a>
-                    |
-                    <a href="https://maps.app.goo.gl/7RpMEkxRyQpapiJq6" class="text-yellow-400 hover:underline">Our Shop Location</a>
-                </div>
-                <p>&copy; 2024 Craze Kicks. All rights reserved.</p>
-                <p> supporting brands</p>
-                <p class="text-green-400">ADDIDAS | NIKE | NEW BALANCE | UNDER ARMOUR | PUMA</p>
-            </div>
-        </footer>
+    <!-- Footer -->
+    <?php include 'footer.php'; ?>
 </body>
 </html>

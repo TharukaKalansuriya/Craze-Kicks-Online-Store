@@ -1,26 +1,34 @@
 <?php
-// Include database connection
-include('db_connection.php');
+session_start();
 
-// Check if product_id is set in the request
-if (isset($_POST['product_id'])) {
-    $product_id = $_POST['product_id'];
-    $email = $_SESSION['email']; // Assuming the email is stored in the session after login
+// connection class
+require_once 'connection.php'; 
 
-    // Prepare the SQL statement to delete the entry from the wish_list table
+// Ensure user is logged in
+if (!isset($_SESSION['email'])) {
+    die("User not logged in.");
+}
+
+// Get the item ID from the POST request
+$itemId = isset($_POST['itemID']) ? intval($_POST['itemID']) : 0;
+
+if ($itemId > 0) {
+    // Create an instance of the Database class
+    $db = new Database();
+
+    // Prepare the SQL query
     $sql = "DELETE FROM wish_list WHERE itemID = ? AND email = ?";
-    
-    // Prepare and execute the statement
-    if ($stmt = $conn->prepare($sql)) {
-        $stmt->bind_param("is", $product_id, $email); // Bind product ID and email
-        if ($stmt->execute()) {
-            echo "Product removed from wish list.";
-        } else {
-            echo "Error removing product from wish list.";
-        }
-        $stmt->close();
+    $params = [$itemId, $_SESSION['email']];
+
+    // Execute the query
+    $stmt = $db->executeQuery($sql, $params);
+
+    if ($stmt->affected_rows > 0) {
+        echo "Item removed from Wish List Successfully!";
     } else {
-        echo "Error preparing statement.";
+        echo "Error removing item from Wish List.";
     }
+} else {
+    echo "Invalid item ID.";
 }
 ?>

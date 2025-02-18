@@ -3,32 +3,26 @@ session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-$servername = "localhost";
-$username = "root";
-$password = "1234";
-$dbname = "crazekicks";
+// Include the connection
+require_once 'connection.php';
 
-$conn = new mysqli($servername, $username, $password, $dbname);
+// Initialize the Database class
+$db = new Database();
 
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-
+// Initialize error message
 $errorMessage = '';
 
+// Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim($_POST['email']);
     $password = trim($_POST['password']);
 
-    $stmt = $conn->prepare("SELECT id, name, role, password FROM users WHERE email = ?");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    // Use prepared statement to fetch user details
+    $query = "SELECT id, name, role, password FROM users WHERE email = ?";
+    $user = $db->fetchOne($query, [$email]);
 
-    if ($result->num_rows > 0) {
-        $user = $result->fetch_assoc();
-        
+    if ($user) {
+        // Verify password
         if (password_verify($password, $user['password'])) {
             // Store user details in session
             $_SESSION['user_id'] = $user['id'];
@@ -51,7 +45,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     header("Location: worker_dashboard.php");
                     break;
                 default:
-                    header("Location: index.php"); 
+                    header("Location: index.php");
             }
             exit();
         } else {
@@ -60,11 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
         $errorMessage = "No user found with that email.";
     }
-
-    $stmt->close();
 }
-
-$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -87,12 +77,14 @@ $conn->close();
             Welcome to <span class="text-green-600">Craze</span> <span class="text-yellow-500">Kicks</span>
         </h2>
 
+        <!-- Display error message -->
         <?php if (!empty($errorMessage)): ?>
             <div class="mb-4 text-red-600 text-center font-semibold">
                 <?php echo $errorMessage; ?>
             </div>
         <?php endif; ?>
 
+        <!-- Login Form -->
         <form action="login.php" method="POST" class="space-y-4">
             <div>
                 <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
@@ -110,14 +102,18 @@ $conn->close();
                 Log In
             </button>
         </form>
+
+        <!-- Forgot Password Link -->
         <div class="mt-4 text-center text-sm">
             <a href="forgetfe.html" class="text-green-600 hover:underline">Forgot Password?</a>
         </div>
+
+        <!-- Create Account Link -->
         <div class="mt-2 text-center text-sm">
             <p class="text-gray-700">Don't have an account?
                 <a href="register.php" class="text-yellow-500 hover:underline">Create Account</a>
             </p>
         </div>
     </div>
-</body> 
+</body>
 </html>
